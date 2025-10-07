@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Canton — Quiz Challenge Day2</title>
+  <style>
+    :root{
+      --bg1:#e6ffed; /* light green */
+      --bg2:#d6f7d8;
+      --accent:#1f8a4c; /* deep green */
+      --muted:#2f6b45;
+      --card:#ffffff;
+      --glass: rgba(255,255,255,0.7);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;align-items:center;justify-content:center;padding:24px;
+    }
+    .wrap{max-width:920px;width:100%;}
+
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .logo{
+      width:64px;height:64px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(180deg,#3ad976,#0f8a4c);color:white;font-weight:700;font-size:18px;box-shadow:0 6px 18px rgba(15,138,76,0.18)
+    }
+    h1{margin:0;font-size:20px;color:var(--muted)}
+    p.subtitle{margin:0;color:#385d44;opacity:0.95}
+
+    .card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 10px 30px rgba(10,50,30,0.06)}
+
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+    .meta .left{display:flex;gap:8px;align-items:center}
+    .badge{background:var(--glass);padding:6px 10px;border-radius:999px;color:var(--muted);font-weight:600}
+
+    .question{padding:14px;border-radius:10px;margin-bottom:12px;background:linear-gradient(180deg,rgba(31,138,76,0.04),rgba(31,138,76,0.02));border:1px solid rgba(31,138,76,0.06)}
+    .question h3{margin:0 0 8px 0;color:var(--accent);font-size:16px}
+    .options{display:grid;gap:8px}
+
+    .option{padding:12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:white;cursor:pointer;display:flex;align-items:center;gap:10px}
+    .option input{appearance:none;width:18px;height:18px;border-radius:50%;border:2px solid #cfe9d3;background:white}
+    .option.checked{border-color:rgba(31,138,76,0.14);box-shadow:0 6px 12px rgba(31,138,76,0.06)}
+
+    .controls{display:flex;gap:8px;align-items:center;margin-top:10px}
+    button{background:var(--accent);color:white;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;color:var(--muted);border:1px solid rgba(0,0,0,0.06)}
+
+    footer.results{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .score{font-size:18px;color:var(--accent);font-weight:700}
+    .small{font-size:13px;color:#476b56}
+
+    /* result reveal styles */
+    .option.correct{background:linear-gradient(90deg,#eaffef,#f3fff6);border-color:#78d091}
+    .option.wrong{background:linear-gradient(90deg,#fff2f2,#fff8f8);border-color:#f3b3b3;opacity:0.95}
+
+    @media (max-width:640px){.meta{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">C</div>
+      <div>
+        <h1>Canton — Quiz Challenge Day2</h1>
+        <p class="subtitle">Green theme • Colourful • Interactive quiz tool</p>
+      </div>
+    </header>
+
+    <main class="card">
+      <div class="meta">
+        <div class="left"><div class="badge">Day 2</div><div class="small">10 Questions — Multiple Choice</div></div>
+        <div>
+          <button id="shuffleBtn" class="ghost">Shuffle Questions</button>
+          <button id="restartBtn" class="ghost">Restart</button>
+        </div>
+      </div>
+
+      <div id="quizArea"></div>
+
+      <div class="controls">
+        <button id="prevBtn" class="ghost">Previous</button>
+        <button id="nextBtn">Next</button>
+        <div style="flex:1"></div>
+        <button id="submitBtn">Submit Quiz</button>
+      </div>
+
+      <footer class="results" id="resultsFooter" style="display:none">
+        <div>
+          <div class="score" id="scoreText">Score: 0 / 10</div>
+          <div class="small" id="timeText">Time: 0s</div>
+        </div>
+        <div>
+          <button id="reviewBtn" class="ghost">Review Answers</button>
+          <button id="downloadBtn">Download Results</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // Questions (sourced from the provided Rialo article content)
+    const QUESTIONS = [
+      {
+        q: "What is a major shortcoming of current tokenized real‑world assets (RWAs) as per the article?",
+        options: ["They automatically update themselves without human checks","They rely heavily on off‑chain verification for corporate events","They always integrate live market data","They are fully autonomous on their own"],
+        correctIndex: 1
+      },
+      {
+        q: "Which capability does Rialo claim to provide that typical RWAs lack?",
+        options: ["Long batch settlement times","Manual triggering of every adjustment","Reactivity to state changes without human intervention","Complete isolation from real‑world data"],
+        correctIndex: 2
+      },
+      {
+        q: "What is one example given of real‑world data sources Rialo can fetch and verify?",
+        options: ["Fictional user input","Government registries","Comic books","Randomized data with no origin"],
+        correctIndex: 1
+      },
+      {
+        q: "Which of the following is a use case cited for 'Debt & Credit' on Rialo?",
+        options: ["Manual invoicing only","Tokenized invoices that settle instantly when Stripe or ACH confirms payment","Fixed credit lines that never adjust","Invoices that require monthly human reconciliation"],
+        correctIndex: 1
+      },
+      {
+        q: "In the 'Real‑World Reactivity & Automation' section, what kind of event is Rialo designed to respond to automatically?",
+        options: ["A user pressing a button","A credit downgrade","A static contract with no external trigger","Only off‑chain manual updates"],
+        correctIndex: 1
+      },
+      {
+        q: "Which of these is a use case under 'Insurance & Risk' mentioned in the article?",
+        options: ["Insurance policy that requires manual claim submission only","Parametric insurance that settles instantly from public delay feeds","Insurance that never changes under any condition","Delayed payout after months of review"],
+        correctIndex: 1
+      },
+      {
+        q: "What is the 'living instrument' concept for assets on Rialo?",
+        options: ["Assets that remain static once minted","Assets that adapt dynamically based on live data","Assets that must be manually edited daily","Assets that ignore real‑world changes"],
+        correctIndex: 1
+      },
+      {
+        q: "Which of these is cited as a use case for 'Commodities & Trade Finance'?",
+        options: ["Tokens unrelated to physical goods","Warehouse receipts tied to GPS and inspection data","Commodity tokens that never rebalance","Trade finance completely detached from supply chain data"],
+        correctIndex: 1
+      },
+      {
+        q: "What does Rialo aim to achieve in terms of speed and scale for RWAs?",
+        options: ["Minutes to hours of settlement time","Sub‑second end‑to‑end latency and horizontal scalability","Limited throughput for small assets only","Only off‑chain batching for all operations"],
+        correctIndex: 1
+      },
+      {
+        q: "Which of the following describes Rialo’s approach to privacy and identity?",
+        options: ["Fully anonymous with no identity constraints","Verifiable yet confidential execution, with familiar logins","Public identity mandatory for all participants","No identity integration at all"],
+        correctIndex: 1
+      }
+    ];
+
+    // State
+    let currentIndex = 0;
+    let userAnswers = new Array(QUESTIONS.length).fill(null);
+    let startTime = null;
+
+    // Elements
+    const quizArea = document.getElementById('quizArea');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resultsFooter = document.getElementById('resultsFooter');
+    const scoreText = document.getElementById('scoreText');
+    const timeText = document.getElementById('timeText');
+    const reviewBtn = document.getElementById('reviewBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    function renderQuestion(i){
+      const item = QUESTIONS[i];
+      quizArea.innerHTML = '';
+      const qWrap = document.createElement('div');
+      qWrap.className = 'question';
+      const h = document.createElement('h3');
+      h.textContent = `Q${i+1}. ${item.q}`;
+      qWrap.appendChild(h);
+
+      const opts = document.createElement('div');
+      opts.className = 'options';
+
+      item.options.forEach((opt, idx)=>{
+        const o = document.createElement('label');
+        o.className = 'option';
+        o.setAttribute('data-idx', idx);
+        o.innerHTML = `<input type='radio' name='opt' ${userAnswers[i]===idx? 'checked' : ''} /> <div style="flex:1">${opt}</div>`;
+        o.addEventListener('click', ()=>{
+          userAnswers[i] = idx;
+          Array.from(opts.children).forEach(c=>c.classList.remove('checked'));
+          o.classList.add('checked');
+        });
+        if(userAnswers[i]===idx) o.classList.add('checked');
+        opts.appendChild(o);
+      });
+
+      qWrap.appendChild(opts);
+      quizArea.appendChild(qWrap);
+    }
+
+    function goTo(index){
+      if(index<0) index=0;
+      if(index>=QUESTIONS.length) index=QUESTIONS.length-1;
+      currentIndex = index;
+      renderQuestion(currentIndex);
+    }
+
+    prevBtn.addEventListener('click', ()=>goTo(currentIndex-1));
+    nextBtn.addEventListener('click', ()=>goTo(currentIndex+1));
+    restartBtn.addEventListener('click', ()=>{
+      if(!confirm('Restart quiz? All answers will be cleared.')) return;
+      userAnswers = new Array(QUESTIONS.length).fill(null);
+      startTime = Date.now();
+      resultsFooter.style.display='none';
+      goTo(0);
+    });
+
+    shuffleBtn.addEventListener('click', ()=>{
+      // Fisher-Yates shuffle of questions while preserving answers mapping
+      const paired = QUESTIONS.map((q, idx)=>({q, ans: userAnswers[idx]}));
+      for(let i=paired.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [paired[i],paired[j]] = [paired[j],paired[i]];
+      }
+      // overwrite arrays
+      for(let i=0;i<paired.length;i++){
+        QUESTIONS[i] = paired[i].q;
+        userAnswers[i] = null; // clear answers after shuffle
+      }
+      goTo(0);
+    });
+
+    submitBtn.addEventListener('click', ()=>{
+      if(!startTime) startTime = Date.now();
+      if(!confirm('Submit quiz now?')) return;
+      // compute score
+      let score=0;
+      QUESTIONS.forEach((qq, idx)=>{
+        if(userAnswers[idx]===qq.correctIndex) score++;
+      });
+      const elapsed = Math.round((Date.now()-startTime)/1000);
+      scoreText.textContent = `Score: ${score} / ${QUESTIONS.length}`;
+      timeText.textContent = `Time: ${elapsed}s`;
+      resultsFooter.style.display='flex';
+      revealAnswers();
+    });
+
+    function revealAnswers(){
+      // show first question with visual reveal and navigation enabled
+      renderQuestionWithReveal(0);
+      currentIndex = 0;
+    }
+
+    function renderQuestionWithReveal(i){
+      const item = QUESTIONS[i];
+      quizArea.innerHTML = '';
+      const qWrap = document.createElement('div');
+      qWrap.className = 'question';
+      const h = document.createElement('h3');
+      h.textContent = `Q${i+1}. ${item.q}`;
+      qWrap.appendChild(h);
+
+      const opts = document.createElement('div');
+      opts.className = 'options';
+
+      item.options.forEach((opt, idx)=>{
+        const o = document.createElement('div');
+        o.className = 'option';
+        o.textContent = opt;
+        // mark correct / wrong styles
+        if(idx===item.correctIndex) o.classList.add('correct');
+        if(userAnswers[i]!==null && userAnswers[i]===idx && idx!==item.correctIndex) o.classList.add('wrong');
+        opts.appendChild(o);
+      });
+
+      qWrap.appendChild(opts);
+      quizArea.appendChild(qWrap);
+    }
+
+    reviewBtn.addEventListener('click', ()=>{
+      // cycle through revealed questions with prev/next
+      renderQuestionWithReveal(currentIndex);
+      prevBtn.onclick = ()=>{ if(currentIndex>0){currentIndex--; renderQuestionWithReveal(currentIndex);} };
+      nextBtn.onclick = ()=>{ if(currentIndex<QUESTIONS.length-1){currentIndex++; renderQuestionWithReveal(currentIndex);} };
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      const payload = QUESTIONS.map((q, idx)=>({
+        question: q.q,
+        selected: userAnswers[idx]===null? null : q.options[userAnswers[idx]],
+        correct: q.options[q.correctIndex]
+      }));
+      const blob = new Blob([JSON.stringify({results:payload, score: scoreText.textContent, time: timeText.textContent}, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'canton-day2-results.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // start
+    (function init(){
+      startTime = Date.now();
+      goTo(0);
+    })();
+
+  </script>
+</body>
+</html>
